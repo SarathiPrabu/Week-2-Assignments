@@ -32,6 +32,81 @@
 const express = require("express")
 const PORT = 3000;
 const app = express();
-// write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
+
+var userDatabase = [];
+function userSignUp(req, res) {
+  var user = req.body;
+  let userExistFlag = false;
+  for (var i = 0; i < userDatabase.length; i++) {
+    if (userDatabase[i].email === user.email) {
+      userExistFlag = true;
+    }
+  }
+  if (userExistFlag) {
+    res.status(400).send("ID already exists");
+  }
+  else {
+    userDatabase.push(user);
+    res.status(201).send("Signup successful");
+  }
+
+}
+function login(email, password) {
+  for (var i = 0; i < userDatabase.length; i++) {
+    if (userDatabase[i].email === email && userDatabase[i].password === password) {
+      return { success: true, index: i };
+    }
+  }
+  return { success: false, index: -1 };
+}
+
+function userLogin(req, res) {
+  var user = req.body;
+  var result = login(user.email, user.password);
+  if (result.success) {
+    let usersToReturn = [];
+    var ansObj = {
+      email: userDatabase[result.index].email,
+      firstName: userDatabase[result.index].firstName,
+      lastName: userDatabase[result.index].lastName,
+    };
+    usersToReturn.push(ansObj);
+    res.status(200).send(ansObj);
+  } else {
+    res.status(401).send("Unauthorized");
+  }
+}
+
+function fetchData(req, res) {
+  var user = req.headers;
+  var result = login(user.email, user.password);
+
+  if (result.success) {
+    var users = [];
+    for (var i = 0; i < userDatabase.length; i++) {
+      users.push({
+        firstName: userDatabase[i].firstName,
+        lastName: userDatabase[i].lastName,
+        email: userDatabase[i].email
+      });
+    }
+    res.status(200).send({
+      users
+    });
+  } else {
+    res.status(401).send("Unauthorized");
+  }
+}
+
+app.use(express.json());
+app.post('/signup', userSignUp);
+app.post('/login', userLogin);
+app.get('/data', fetchData);
+app.use((req, res) => {
+  res.status(404).send('404 - Not Found');
+});
+// app.listen(PORT, () => {
+//   console.log(`Example app listening on port ${PORT}`)
+// })
 
 module.exports = app;
